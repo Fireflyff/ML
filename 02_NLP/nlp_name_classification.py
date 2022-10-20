@@ -273,20 +273,69 @@ all_losses1, period1 = train(rnn)
 all_losses2, period2 = train(lstm)
 all_losses3, period3 = train(gru)
 
-# 绘制损失对比曲线，训练耗时对比柱状图
-# 创建画布0
-plt.figure(0)
-# 绘制损失对比曲线
-plt.plot(all_losses1, label='RNN')
-plt.plot(all_losses2, color='red', label='LSTM')
-plt.plot(all_losses3, color='orange', label='GRU')
-plt.legend(loc='upper left')
-plt.show()
-# 创建画布1
-plt.figure(1)
-x_data = ['RNN', 'LSTM', 'GRU']
-y_data = [period1, period2, period3]
-# 耗时训练时对比柱状图
-plt.bar(range(len(x_data)), y_data, tick_label=x_data)
+# # 绘制损失对比曲线，训练耗时对比柱状图
+# # 创建画布0
+# plt.figure(0)
+# # 绘制损失对比曲线
+# plt.plot(all_losses1, label='RNN')
+# plt.plot(all_losses2, color='red', label='LSTM')
+# plt.plot(all_losses3, color='orange', label='GRU')
+# plt.legend(loc='upper left')
+# plt.show()
+# # 创建画布1
+# plt.figure(1)
+# x_data = ['RNN', 'LSTM', 'GRU']
+# y_data = [period1, period2, period3]
+# # 耗时训练时对比柱状图
+# plt.bar(range(len(x_data)), y_data, tick_label=x_data)
+#
+# plt.show()
 
-plt.show()
+
+def evaluate(line_tensor, model):
+    """评估函数, 和训练函数逻辑相同, 参数是 line_tensor 代表名字的张量表示"""
+    # 初始化隐层张量
+    Hidden = model.initHidden()
+    if isinstance(Hidden, tuple):
+        tmp = (torch.tensor([0]), *Hidden)
+    else:
+        tmp = (torch.tensor([0]), Hidden)
+
+    # 将评估数据 line_tensor 的每个字符逐个传入 model 之中
+    for i in range(line_tensor.size()[0]):
+        tmp = model(line_tensor[i], *tmp[1:])
+    # 获得输出结果
+    output = tmp[0]
+    return output.squeeze(0)
+
+
+def predict(input_line, model, n_predictions=3):
+    """预测函数, 输入参数input_line代表输入的名字,
+           n_predictions代表需要取最有可能的top个"""
+    # 首先打印输入
+    print('\n> %s' % input_line)
+    # 以下操作的相关张量不进行求梯度
+    with torch.no_grad():
+        # 使输入的名字转化成张量表示，并使用evaluate函数获得预测输出
+        output = evaluate(lineToTensor(input_line), model)
+        # 从预测的输出中取前3个最大的值及其索引
+        topv, topi = output.topk(n_predictions, 1, True)
+        # 创建盛装结果的列表
+        predictions = []
+        # 遍历 n_predictions
+        for i in range(n_predictions):
+            # 从 topv 中取出的 output 值
+            value = topv[0][i].item()
+            # 取出索引并找到对应的类别
+            category_index = topi[0][i].item()
+            # 打印 output 的值，和对应的类别
+            print('(%.2f) %s' % (value, all_category[category_index]))
+            # 将结果装进 predictions 中
+            predictions.append([value, all_category[category_index]])
+
+
+for model in [rnn, lstm, gru]:
+    print("-"*18)
+    predict('Dovesky', model)
+    predict('Jackson', model)
+    predict('Satoshi', model)
