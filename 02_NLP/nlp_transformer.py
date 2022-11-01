@@ -331,7 +331,7 @@ def run(model, loss, epochs=10):
     # 模型进入测试模式
     model.eval()
     source = Variable(torch.LongTensor([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]))
-    # 在这个工具包中，1表示遮挡
+    # 在这个工具包中，0表示遮挡
     source_mask = Variable(torch.ones(1, 1, 10))
     result = greedy_decode(model, source, source_mask, max_len=10, start_symbol=1)
     print(result)
