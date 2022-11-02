@@ -69,6 +69,12 @@ def subsequent_mask(size):
 
 def attention(query, key, value, mask=None, dropout=None):
     # query的size：(句子的数量，head的大小，句子的长度，每个head的embedding_size)
+    """
+    ：关于mask的mark：表示一个句子中哪些单词需要忽略。
+    ：Encoder的Multi-Head Attention为input Embedding的mask
+    ：Decoder的Masked Multi-Head Attention 为output Embedding的mask
+    ：Decoder的Multi-Head Attention为Encoder输出结果的mask,一般为input Embedding的mask
+    """
     d_k = query.size(-1)
     # scores的size：(句子的数量，head的大小，句子中对应词汇的相似度)
     scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
@@ -100,6 +106,9 @@ class MultiHeadedAttention(nn.Module):
         self.dropout = nn.Dropout(p=dropout)
 
     def forward(self, query, key, value, mask=None):
+        # 每个head去关注词向量的部分信息，最终结合所有head的结果->
+        # (batch, head, sentence_length, d_k)->(batch, sentence_length, head*d_k)->
+        # (batch, sentence_length->embedding_size),即原数据x的维度
         if mask is not None:
             mask = mask.unsqueeze(0)
         # 样本个数
@@ -115,6 +124,7 @@ class MultiHeadedAttention(nn.Module):
         # print("多头注意力机制中的forward：", query.size(), mask.size())
         x, self.attn = attention(query, key, value, mask=mask, dropout=self.dropout)
         # print("多头注意力机制的embedding以及相关系数：", x.size(), self.attn.size())
+        # contiguous类似深拷贝
         x = x.transpose(1, 2).contiguous().view(batch_size, -1, self.head * self.d_k)
         return self.linears[-1](x)
 
@@ -122,6 +132,12 @@ class MultiHeadedAttention(nn.Module):
 # 通过PositionwiseFeedForward来实现前馈全连接层
 class PositionwiseFeedForward(nn.Module):
     def __init__(self, d_model, d_ff, dropout=0.1):
+        """
+        前馈全连接层
+        d_model: 词嵌入维度
+        d_ff: 隐藏层维度
+        dropout:
+        """
         super(PositionwiseFeedForward, self).__init__()
         self.w1 = nn.Linear(d_model, d_ff)
         self.w2 = nn.Linear(d_ff, d_model)
@@ -315,7 +331,7 @@ def data_generator(V, batch, num_batch):
     for i in range(num_batch):
         data = torch.from_numpy(np.random.randint(1, V, size=(batch, 10)))
         # 解码器解码，会使用起始标志列作为输入，即 1
-        data[:, 0] = 1
+        data[:, 0] = 7777
         source = Variable(data, requires_grad=False)
         target = Variable(data, requires_grad=False)
         # 使用Batch对source和target进行对应批次的掩码张量生成, 最后使用yield返回
@@ -333,14 +349,14 @@ def run(model, loss, epochs=10):
     source = Variable(torch.LongTensor([[1, 2, 3, 4, 5, 6, 7, 8, 9, 10]]))
     # 在这个工具包中，1表示遮挡
     source_mask = Variable(torch.ones(1, 1, 10))
-    result = greedy_decode(model, source, source_mask, max_len=10, start_symbol=1)
+    result = greedy_decode(model, source, source_mask, max_len=20, start_symbol=7777)
     print(result)
 
 
 if __name__ == '__main__':
-    V = 11
-    batch = 20
-    num_batch = 30
+    V = 7778
+    batch = 1
+    num_batch = 1
     model = make_model(V, V, N=2)
     # 使用get_std_opt获得模型优化器
     # 该标准优化器基于Adam优化器, 使其对序列到序列的任务更有效.
