@@ -1,5 +1,5 @@
 """
-将处理后的数据转换成 BERT 格式，并声称3个tensors
+将处理后的数据转换成 BERT 格式，并生成3个tensors
 - tokens_tensor：两个句子合并后的索引序列，包含[CLS]和[SEP]
 - segments_tensor：用来识别两个句子界限的 binary tensor
 _ label_tensor：将分类标签转换成类别索引的 tensor ，如果是测试集则为 None

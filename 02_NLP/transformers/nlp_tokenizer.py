@@ -1,3 +1,4 @@
+# https://github.com/lansinuote/Huggingface_Toturials
 from transformers import BertTokenizer
 # 加载预训练字典和分词方法
 tokenizer = BertTokenizer.from_pretrained(
@@ -125,3 +126,4 @@ tokenizer.add_tokens(new_tokens=["XX"])
 tokenizer.add_special_tokens({'eos_token': '[EOS]'})
 zidian = tokenizer.get_vocab()
 print(zidian)
+print(tokenizer)
