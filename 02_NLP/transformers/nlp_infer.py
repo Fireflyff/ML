@@ -76,8 +76,10 @@ class Model(torch.nn.Module):
             out = pretrained(input_ids=input_ids,
                              attention_mask=attention_mask,
                              token_type_ids=token_type_ids)
-        out = self.fc(out[0][:, 0])
+        # out = self.fc(out[0][:, 0])
+        out = self.fc(out[1])
         # todo out[0][0] != out[1] ==> ???
+        # todo:两者均可训练
         out = out.softmax(dim=1)
         return out
 
