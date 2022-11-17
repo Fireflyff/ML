@@ -60,7 +60,6 @@ loader = DataLoader(dataset=dataset,
                     drop_last=True)
 
 
-
 pretrained = BertModel.from_pretrained("bert-base-chinese")
 for param in pretrained.parameters():
     param.requires_grad_(False)
@@ -79,6 +78,8 @@ class Model(torch.nn.Module):
         # out = self.fc(out[0][:, 0])
         out = self.fc(out[1])
         # todo out[0][0] != out[1] ==> ???
+        # todo:answer：out[0]：last_hidden_state，out[1]：pooler_output
+        # todo:out[1]为out[0][0]（[CLS]）经过dense和activation之后的结果
         # todo:两者均可训练
         out = out.softmax(dim=1)
         return out
