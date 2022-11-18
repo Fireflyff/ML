@@ -34,6 +34,7 @@ class FakeNewsDataset(Dataset):
 
         # 建立第一个句子的 BERT tokens 并加入分隔符 [SEP]
         word_pieces = ["[CLS]"]
+        # 对文本进行分词
         tokens_a = self.tokenizer.tokenize(text_a)
         word_pieces += tokens_a + ["[SEP]"]
         len_a = len(word_pieces)
@@ -86,9 +87,77 @@ def create_mini_batch(samples):
     masks_tensors = masks_tensors.masked_fill(tokens_tensors != 0, 1)
     return tokens_tensors, segments_tensors, masks_tensors, label_ids
 
+
 # 初始化一个每次回传 64 个训练样本的 DataLoader
 # 利用 collate_fn 将 list of samples 合成一个 mini-batch
 BATCH_SIZE = 64
 trainloader = DataLoader(trainset, batch_size=BATCH_SIZE, collate_fn=create_mini_batch)
 NUM_LABELS = 3
 model = BertForSequenceClassification.from_pretrained(PRETRAINED_MODEL_NAME, num_labels=NUM_LABELS)
+
+
+def get_predictions(model, dataloader, compute_acc=False):
+    predictions = None
+    correct = 0
+    total = 0
+    model.eval()
+    with torch.no_grad():
+        for data in dataloader:
+            tokens_tensors, segments_tensors, masks_tensors = data[:3]
+            outputs = model(input_ids=tokens_tensors,
+                            token_type_ids=segments_tensors,
+                            attention_mask=masks_tensors)
+            logits = outputs[0]
+            # value, index
+            _, pred = torch.max(logits.data, 1)
+            # 计算准确率
+            if compute_acc:
+                labels = data[3]
+                total += labels.size(0)
+                correct += (pred == labels).sum().item()
+            # 记录当前的batch
+            if predictions is None:
+                predictions = pred
+            else:
+                predictions = torch.cat((predictions, pred))
+    if compute_acc:
+        acc = correct / total
+        return predictions, acc
+    return predictions
+
+
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
+# 训练模型
+model.train()
+# 使用 Adam Optim 更新整个分类模型的参数
+optimizer = torch.optim.Adam(model.parameters(), lr=1e-5)
+EPOCHS = 7
+for epoch in range(EPOCHS):
+    running_loss = 0.0
+    for data in trainloader:
+        tokens_tensors, segments_tensors, masks_tensors, labels = data
+        optimizer.zero_grad()
+        outputs = model(input_ids=tokens_tensors,
+                        token_type_ids=segments_tensors,
+                        attention_mask=masks_tensors,
+                        labels=labels)
+        loss = outputs[0]
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+
+    _, acc = get_predictions(model, trainloader, True)
+    print(epoch + 1, running_loss, acc)
+
+testset = FakeNewsDataset("test", tokenizer=tokenizer)
+testloader = DataLoader(testset, 256, collate_fn=create_mini_batch)
+predictions = get_predictions(model, testloader)
+# 用于转文字
+index_map = {v: k for k, v in testset.label_map.items()}
+# 生成结果
+df = pd.DataFrame({"Category": predictions.tolist()})
+df["Category"] = df.Category.apply(lambda x: index_map[x])
+df_pred = pd.concat([testset.df.loc[:, ["Id"]], df.loc[:, "Category"]], axis=1)
+df_pred.to_csv("bert_1_prec_training_samples.csv", index=False)
+print(df_pred.head())
