@@ -127,3 +127,4 @@ tokenizer.add_special_tokens({'eos_token': '[EOS]'})
 zidian = tokenizer.get_vocab()
 print(zidian)
 print(tokenizer)
+# {'[PAD]': 0, '[unused1]': 1, '[unused2]': 2, '[unused3]': 3, ...}
