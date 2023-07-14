@@ -10,17 +10,16 @@ def add_files(files_name, user_id):
     for file_name in files_name:
         # 获取文件后缀
         file_extension = file_name.split(".")[-1]
-        match file_extension:
-            case "pdf":
-                return store_pdf(file_name, user_id)
-            case "docx":
-                return store_word(file_name, user_id)
-            case "txt":
-                return store_text(file_name, user_id)
-            case "pptx":
-                return store_pptx(file_name, user_id)
-            case _:
-                return False
+        if file_extension == "pdf":
+            return store_pdf(file_name, user_id)
+        elif file_extension == "docx":
+            return store_word(file_name, user_id)
+        elif file_extension == "txt":
+            return store_text(file_name, user_id)
+        elif file_extension == "pptx":
+            return store_pptx(file_name, user_id)
+        else:
+            return False
 
 
 def delete_files(files_name, user_id):

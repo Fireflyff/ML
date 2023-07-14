@@ -35,7 +35,13 @@ stopids = tokenizer.convert_tokens_to_ids(["."])[0]
 past = None
 for i in range(100):
     with torch.no_grad():
+        # gpt2的参数："n_embd": 768, "n_head": 12, "n_layer": 12, "vocab_size": 50257
+        # "n_ctx"(所能允许的文本最大长度): 1024, "n_positions"(通常与 n_positions 相同): 1024
         output, past = model(tokens_tensor, past_key_values=past, return_dict=False)
+        # past_key_values 保存了上次迭代过程中的 key 和 value（attention 运算中的键值对）用于加速运算
+        # past_key_values: ((K, Q)) * 12,
+        # 因此past_key_values 的结构为 (12，2，(batch_size, num_head, sql_len, head_features))
+        # 即 (12，2，(1, 12, sql_len, 64)) --> sql_len 为 encoded_input 的 length
 
     token = torch.argmax(output[..., -1, :])
 
