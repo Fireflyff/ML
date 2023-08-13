@@ -1,0 +1,20 @@
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+glm_path = "/Users/yingying/Desktop/pre_train_model/THUDM_glm_large_chinese"
+tokenizer = AutoTokenizer.from_pretrained(glm_path, trust_remote_code=True)
+model = AutoModelForSeq2SeqLM.from_pretrained(glm_path, trust_remote_code=True)
+# model = model.half().cuda()
+model.eval()
+print(tokenizer.eop_token_id)
+print(tokenizer.decode([tokenizer.eop_token_id]))
+# Inference
+inputs = tokenizer("Ng is an adjunct professor at [gMASK]", return_tensors="pt")
+inputs = tokenizer.build_inputs_for_generation(inputs, max_gen_length=512)
+print(inputs)
+print(inputs.input_ids[0])
+print(tokenizer.decode(inputs.input_ids[0].tolist()))
+print([tokenizer.decode([i]) for i in inputs.input_ids[0].tolist()])
+print(inputs.generation_attention_mask.size())
+print(inputs.generation_attention_mask)
+# inputs = inputs.to('cuda')
+# outputs = model.generate(**inputs, max_length=512, eos_token_id=tokenizer.eop_token_id, no_repeat_ngram_size=1)
+# print(tokenizer.decode(outputs[0].tolist(), skip_special_tokens=True)[len(prompt):])
